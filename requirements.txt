@@ -16,9 +16,6 @@ feedparser==6.0.11
 requests==2.32.3
 httpx==0.27.2
 
-# Notifiers
-python-telegram-bot==21.6
-
 # Config
 pydantic-settings==2.6.0
 python-dotenv==1.0.1
