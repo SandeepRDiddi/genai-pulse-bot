@@ -1,121 +1,205 @@
-# GenAI Global Trends Bot (Open-Source)
+# 🤖 GenAI Pulse Bot
 
-A self-hosted “stay up-to-date on GenAI” bot with **global coverage** beyond RSS.
+> Stay up to date with the latest in Generative AI — automatically.
 
-## What it does
-- **Collects global news + research signals** from:
-  - **GDELT DOC API** (global news)  
-  - **Media Cloud API v2** (online news archive / story stream)
-  - Optional RSS feeds (blogs, arXiv RSS, etc.)
-- **Normalizes + deduplicates** items (URL + title hashing)
-- **Indexes** into **Qdrant** vector DB using local embeddings
-- **Answers questions** with citations via any **OpenAI-compatible** LLM endpoint (Ollama supported)
-- Produces **persona briefings**:
-  - `Leadership` (what changed, why it matters, actions, risks)
-  - `Business` (use cases, value, adoption, vendors, risks)
-  - `Tech` (architectures, evals, OSS, implementation notes)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?style=flat-square)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/docker-ready-blue?style=flat-square)](Dockerfile)
+
+GenAI Pulse Bot automatically tracks the latest developments in Generative AI from **Arxiv**, **HuggingFace**, **Reddit**, and **Tech News** — and delivers them to you via a beautiful web dashboard, Telegram, Slack, or email.
 
 ---
 
-## Quickstart
+## ✨ Features
 
-### Prereqs
-- Python 3.10+
-- Docker + Docker Compose
+| Feature | Description |
+|---|---|
+| 📄 **Arxiv Papers** | Latest AI/ML papers (cs.AI, cs.LG, cs.CL, cs.CV) |
+| 🤗 **HuggingFace** | Trending models + HF Daily Papers |
+| 💬 **Reddit** | Hot posts from r/MachineLearning, r/LocalLLaMA, r/artificial |
+| 📰 **Tech News** | AI news from TechCrunch, VentureBeat, MIT Tech Review, The Verge |
+| 🌐 **Web Dashboard** | Real-time filterable feed with search |
+| 📱 **Telegram** | Daily digest to your channel |
+| 💬 **Slack** | Rich Block Kit messages to your workspace |
+| 📧 **Email** | Beautiful HTML digest to subscribers |
+| ⏰ **Scheduled** | Auto-fetches every 6 hours via Celery |
+| 🐳 **Docker** | One-command deployment |
 
-### 1) Start Qdrant
+---
+
+## 🚀 Quick Start
+
+### Option 1: Local (no Docker)
+
 ```bash
-docker compose up -d qdrant
-```
+# Clone
+git clone https://github.com/SandeepRDiddi/genai-pulse-bot.git
+cd genai-pulse-bot
 
-### 2) Install + configure
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# Install
 pip install -r requirements.txt
+
+# Configure
 cp .env.example .env
+# Edit .env with your API keys (only add what you need)
+
+# Run
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 3) Ingest fresh items (GDELT + MediaCloud + RSS)
+Open **http://localhost:8000** — the dashboard loads immediately.
+
+To trigger a fetch manually:
 ```bash
-python -m app.ingest --once
+curl -X POST http://localhost:8000/api/admin/fetch
 ```
 
-### 4) Run API + UI
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-streamlit run ui/streamlit_app.py
-```
-
-Open:
-- API docs: http://localhost:8000/docs
-- UI: http://localhost:8501
-
----
-
-## LLM Configuration (Ollama or OpenAI-Compatible)
-
-This app calls an **OpenAI-compatible** Chat Completions endpoint.
-
-### Option A: Local (Ollama)
-```bash
-ollama pull llama3.1
-```
-Set in `.env`:
-- `LLM_BASE_URL=http://localhost:11434/v1`
-- `LLM_API_KEY=ollama`  (any string)
-- `LLM_MODEL=llama3.1`
-
-### Option B: Cloud (OpenAI-compatible)
-Set:
-- `LLM_BASE_URL=https://api.openai.com/v1`
-- `LLM_API_KEY=...`
-- `LLM_MODEL=...`
-
----
-
-## API Endpoints
-- `POST /chat` — Q&A with citations
-- `GET /briefing/leadership` — latest leadership briefing
-- `GET /briefing/business` — latest business briefing
-- `GET /briefing/tech` — latest technical briefing
-
----
-
-## Source Keys / Limits
-### Media Cloud
-You need an API key (see Media Cloud docs). The API uses a `key` query parameter and has request limits.  
-Set `MEDIACLOUD_API_KEY` in `.env`.
-
-### GDELT
-No key is required for typical DOC queries, but it has rate limits; keep ingestion modest.
-
----
-
-## GitHub Push (you run this)
-I can’t directly push to your GitHub from here. After unzipping:
+### Option 2: Docker (recommended)
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit: GenAI Global Trends Bot"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<repo-name>.git
-git push -u origin main
+git clone https://github.com/SandeepRDiddi/genai-pulse-bot.git
+cd genai-pulse-bot
+cp .env.example .env   # edit with your keys
+
+docker-compose up -d
+```
+
+This starts:
+- **API** on port 8000
+- **Celery Worker** (background tasks)
+- **Celery Beat** (scheduler)
+- **Redis** (message broker)
+
+---
+
+## ⚙️ Configuration
+
+Copy `.env.example` to `.env` — everything is optional except what you want to use:
+
+```env
+# Required for scheduled tasks
+REDIS_URL=redis://localhost:6379/0
+
+# Optional notifiers — add only what you want
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHANNEL_ID=@your_channel
+
+SLACK_BOT_TOKEN=xoxb-your-token
+SLACK_CHANNEL=#genai-updates
+
+SMTP_USER=your@gmail.com
+SMTP_PASSWORD=your_app_password
+```
+
+The web dashboard works with **zero configuration** — no API keys needed.
+
+---
+
+## 🌐 Deploy to Railway (Free)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/genai-pulse)
+
+1. Click the button above
+2. Add your environment variables
+3. Deploy — Railway gives you a public URL
+
+### Or deploy manually:
+```bash
+npm install -g @railway/cli
+railway login
+railway up
 ```
 
 ---
 
-## Project Layout
+## 📡 API Reference
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/articles` | GET | Get latest articles (filter by `source`, `category`, `hours`) |
+| `/api/stats` | GET | Get counts by source and category |
+| `/api/subscribe` | POST | Subscribe to email digest |
+| `/api/admin/fetch` | POST | Manually trigger scraping |
+| `/api/admin/digest` | POST | Manually send digest |
+| `/api/health` | GET | Health check |
+
+**Example:**
+```bash
+# Get last 24h Arxiv papers
+curl "http://localhost:8000/api/articles?source=arxiv&hours=24"
+
+# Get stats
+curl "http://localhost:8000/api/stats"
 ```
-genai-tech-bot/
-  app/
-    providers/          # GDELT, MediaCloud, RSS
-    ingest.py           # ingestion runner
-    retrieval.py        # Qdrant search
-    briefing.py         # persona briefing generator
-    main.py             # FastAPI endpoints
-  ui/
-    streamlit_app.py
-  docker-compose.yml
+
+---
+
+## 🤖 Setting Up Telegram Bot
+
+1. Message [@BotFather](https://t.me/botfather) → `/newbot` → copy token
+2. Create a Telegram channel
+3. Add your bot as admin to the channel
+4. Get channel ID from [@userinfobot](https://t.me/userinfobot)
+5. Add to `.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=your_token
+   TELEGRAM_CHANNEL_ID=@your_channel
+   ```
+
+---
+
+## 💬 Setting Up Slack Bot
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → Create New App
+2. Add OAuth scopes: `chat:write`, `channels:join`
+3. Install to workspace → copy **Bot Token**
+4. Invite bot to your channel: `/invite @your-bot`
+5. Add to `.env`:
+   ```
+   SLACK_BOT_TOKEN=xoxb-your-token
+   SLACK_CHANNEL=#genai-updates
+   ```
+
+---
+
+## 🏗️ Architecture
+
 ```
+┌─────────────────────────────────────────────┐
+│                 GenAI Pulse Bot              │
+├──────────────┬──────────────────────────────┤
+│   Scrapers   │  Notifiers                   │
+│  ─────────   │  ──────────                  │
+│  Arxiv API   │  Telegram Bot                │
+│  HF Hub API  │  Slack Block Kit             │
+│  Reddit JSON │  Email (SMTP)                │
+│  RSS Feeds   │  Web Dashboard               │
+├──────────────┴──────────────────────────────┤
+│   FastAPI + SQLAlchemy + Celery + Redis      │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Ideas for new features:
+- [ ] Twitter/X integration
+- [ ] GitHub Trending repos
+- [ ] AI-powered weekly summary (using Claude/GPT)
+- [ ] Discord bot notifier
+- [ ] Mobile app (React Native)
+- [ ] RSS feed output
+
+Open an issue or PR!
+
+---
+
+## 📄 License
+
+MIT — free to use, modify, and deploy.
+
+---
+
+Built with ❤️ by [@SandeepRDiddi](https://github.com/SandeepRDiddi)

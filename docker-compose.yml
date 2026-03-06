@@ -1,12 +1,50 @@
+version: "3.9"
+
 services:
-  qdrant:
-    image: qdrant/qdrant:v1.12.2
+  api:
+    build: .
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
     volumes:
-      - qdrant_data:/qdrant/storage
-    restart: unless-stopped
+      - ./data:/app/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: .
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/app/data
+    command: celery -A app.tasks worker --loglevel=info -Q celery
+
+  beat:
+    build: .
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/app/data
+    command: celery -A app.tasks beat --loglevel=info
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
-  qdrant_data:
+  redis_data:

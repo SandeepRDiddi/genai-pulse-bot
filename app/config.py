@@ -1,53 +1,52 @@
-from __future__ import annotations
-import json, os
-from dataclasses import dataclass
-from dotenv import load_dotenv
+"""
+Configuration management using environment variables.
+Copy .env.example to .env and fill in your values.
+"""
 
-load_dotenv()
+from pydantic_settings import BaseSettings
+from typing import Optional
 
-def _get(name: str, default: str | None = None) -> str:
-    v = os.getenv(name, default)
-    if v is None:
-        raise RuntimeError(f"Missing required env var: {name}")
-    return v
 
-def _get_int(name: str, default: str) -> int:
-    return int(_get(name, default))
+class Settings(BaseSettings):
+    # App
+    APP_NAME: str = "GenAI Pulse Bot"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
 
-def _get_bool(name: str, default: str = "0") -> bool:
-    return _get(name, default).strip() not in ("0", "false", "False", "")
+    # Database
+    DATABASE_URL: str = "sqlite+aiosqlite:///./genai_pulse.db"
 
-@dataclass(frozen=True)
-class Settings:
-    app_name: str = _get("APP_NAME", "GenAI Global Trends Bot")
+    # Redis (for Celery)
+    REDIS_URL: str = "redis://localhost:6379/0"
 
-    qdrant_url: str = _get("QDRANT_URL", "http://localhost:6333")
-    qdrant_collection: str = _get("QDRANT_COLLECTION", "genai_global")
+    # Scrapers
+    ARXIV_MAX_RESULTS: int = 20
+    HUGGINGFACE_MAX_RESULTS: int = 20
+    REDDIT_MAX_RESULTS: int = 25
+    REDDIT_CLIENT_ID: Optional[str] = None
+    REDDIT_CLIENT_SECRET: Optional[str] = None
+    REDDIT_USER_AGENT: str = "GenAIPulseBot/1.0"
 
-    embed_model: str = _get("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    # Notifiers
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    TELEGRAM_CHANNEL_ID: Optional[str] = None
 
-    llm_base_url: str = _get("LLM_BASE_URL", "http://localhost:11434/v1")
-    llm_api_key: str = _get("LLM_API_KEY", "ollama")
-    llm_model: str = _get("LLM_MODEL", "llama3.1")
+    SLACK_BOT_TOKEN: Optional[str] = None
+    SLACK_CHANNEL: str = "#genai-updates"
 
-    top_k: int = _get_int("TOP_K", "8")
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAIL_FROM: str = "GenAI Pulse Bot <noreply@genai-pulse.bot>"
 
-    enable_gdelt: bool = _get_bool("ENABLE_GDELT", "1")
-    enable_mediacloud: bool = _get_bool("ENABLE_MEDIACLOUD", "1")
-    enable_rss: bool = _get_bool("ENABLE_RSS", "1")
+    # Schedule (cron expressions)
+    FETCH_SCHEDULE: str = "0 */6 * * *"     # every 6 hours
+    DIGEST_SCHEDULE: str = "0 9 * * *"       # daily at 9am UTC
 
-    global_query: str = _get("GLOBAL_QUERY", "generative ai OR genai OR llm")
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
-    gdelt_base_url: str = _get("GDELT_BASE_URL", "https://api.gdeltproject.org/api/v2/doc/doc")
-    gdelt_mode: str = _get("GDELT_MODE", "ArtList")
-    gdelt_format: str = _get("GDELT_FORMAT", "json")
-    gdelt_maxrecords: int = _get_int("GDELT_MAXRECORDS", "75")
-
-    mediacloud_base_url: str = _get("MEDIACLOUD_BASE_URL", "https://api.mediacloud.org/api/v2")
-    mediacloud_api_key: str = _get("MEDIACLOUD_API_KEY", "")
-    mediacloud_rows: int = _get_int("MEDIACLOUD_ROWS", "50")
-
-    rss_feeds: list[str] = json.loads(_get("RSS_FEEDS_JSON", "[]"))
-    max_items_per_feed: int = _get_int("MAX_ITEMS_PER_FEED", "25")
 
 settings = Settings()
