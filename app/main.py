@@ -4,7 +4,7 @@ Tracks latest GenAI developments across Arxiv, HuggingFace, Reddit, and Tech New
 """
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -40,4 +40,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
-app.mount("/", StaticFiles(directory="app/dashboard", html=True), name="dashboard")
+
+
+@app.get("/", include_in_schema=False)
+async def dashboard():
+    return FileResponse("app/dashboard/index.html")
